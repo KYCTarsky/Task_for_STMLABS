@@ -4,6 +4,8 @@
 
 import sys
 import os
+#import time
+#start_time = time.time()
 
 def check_mistake_argv(argv):
     if argv[1][-4:] == ".txt":
@@ -37,7 +39,7 @@ def make_address_list_ipv4(filename):
     pre_address_list = list()
     out_address_list=list()
     for line in file:
-        address_list.append(line[:-1].split("."))# разбиваем строки на отдельые значения и добавляе в общий список
+        address_list.append(line[:-1].split("."))# разбиваем строки на отдельые значения и добавляем в общий список
 
     for i in address_list:
         for j in i:
@@ -46,7 +48,7 @@ def make_address_list_ipv4(filename):
                 except ValueError:
                     print("Проверьте правильность введёных адресов. Ошибка произошла из-за ", j," значения в ", i," строке.")
                     exit()
-        out_address_list.append(pre_address_list)
+        out_address_list.append(pre_address_list)# добавляем сформированный адрес в общий список
         pre_address_list = list()
     out_address_list.sort()
     file.close()
@@ -84,7 +86,7 @@ def binary_convert(num):
         print(num," не является допустимым значением для преобразования.")
         exit()
 
-    num_bin = format(num,'b')
+    num_bin = format(num,'b')# в двоичное значнение
     if len(num_bin) == 8:
         return num_bin
     else:# len(num_bin) < 10
@@ -92,17 +94,15 @@ def binary_convert(num):
 
 def search_mask(address_list):
     low_address = address_list[0]
-    print(low_address)
     top_address = address_list[-1]
-    print(top_address)
-
+    # определяем минимальный и максимальный адрес подсети из списка
+    # и на основании этого определяем маску подсети
     xor_list = list()
     mask_list = list()
     for i in range(0, 4):
         xor_list.append(low_address[i] ^ top_address[i])
     for i in xor_list:
         mask_list.append(roundup(i))
-    print(mask_list)
     if mask_list[0] < 255:
         mask_list[1] = 0
         mask_list[2] = 0
@@ -115,7 +115,7 @@ def search_mask(address_list):
     return mask_list
 
 
-def base_address(mask,dict_mask,address_list):
+def base_address(mask,address_list):
     binary_mask = str()
     for i in mask:
         binary_mask += binary_convert(i)
@@ -127,57 +127,60 @@ def base_address(mask,dict_mask,address_list):
     binary_base_address = str()
     base_address = list()
     for i in range(1,33):
-        binary_base_address += str(int(binary_address[i-1]) and int(binary_mask[i-1]))
+        binary_base_address += str(int(binary_address[i-1]) and int(binary_mask[i-1]))# проводим операцию побитового И и определяем подсеть
         if i % 8 == 0:
-            base_address.append(int(binary_base_address, base = 2))
+            base_address.append(int(binary_base_address, base = 2))# переводим двоичные значения в 10 систему
             binary_base_address = str()
     return base_address
 
-dict_mask = {32: [255, 255, 255, 255]
-        , 31: [255, 255, 255, 254]
-        , 30: [255, 255, 255, 252]
-        , 29: [255, 255, 255, 248]
-        , 28: [255, 255, 255, 240]
-        , 27: [255, 255, 255, 224]
-        , 26: [255, 255, 255, 192]
-        , 25: [255, 255, 255, 128]
-        , 24: [255, 255, 255, 0]
-        , 23: [255, 255, 254, 0]
-        , 22: [255, 255, 252, 0]
-        , 21: [255, 255, 248, 0]
-        , 20: [255, 255, 240, 0]
-        , 19: [255, 255, 224, 0]
-        , 18: [255, 255, 192, 0]
-        , 17: [255, 255, 128, 0]
-        , 16: [255, 255, 0, 0]
-        , 15: [255, 254, 0, 0]
-        , 14: [255, 252, 0, 0]
-        , 13: [255, 248, 0, 0]
-        , 12: [255, 240, 0, 0]
-        , 11: [255, 224, 0, 0]
-        , 10: [255, 192, 0, 0]
-        , 9: [255, 128, 0, 0]
-        , 8: [255, 0, 0, 0]
-        , 7: [254, 0, 0, 0]
-        , 6: [252, 0, 0, 0]
-        , 5: [248, 0, 0, 0]
-        , 4: [240, 0, 0, 0]
-        , 3: [224, 0, 0, 0]
-        , 2: [192, 0, 0, 0]
-        , 1: [128, 0, 0, 0]
-        , 0: [0, 0, 0, 0]}
-ip_filename,ip_type_v4 = check_mistake_argv(sys.argv)
-if ip_type_v4 == "IPv4":
-    address_list_ipv4 = make_address_list_ipv4(ip_filename)
-    mask = search_mask(address_list_ipv4)
-    base_address = base_address(mask, dict_mask, address_list_ipv4)
-    #base_address,short_mask = search_base_address_ipv4(address_list_ipv4)
-    for key, value in dict_mask.items():
-        if value == mask:
-            short_mask = key
-    print("Result net: {}.{}.{}.{}/{}".format(base_address[0],base_address[1],base_address[2],base_address[3],short_mask))
+def main():
+    dict_mask = {32: [255, 255, 255, 255]
+            , 31: [255, 255, 255, 254]
+            , 30: [255, 255, 255, 252]
+            , 29: [255, 255, 255, 248]
+            , 28: [255, 255, 255, 240]
+            , 27: [255, 255, 255, 224]
+            , 26: [255, 255, 255, 192]
+            , 25: [255, 255, 255, 128]
+            , 24: [255, 255, 255, 0]
+            , 23: [255, 255, 254, 0]
+            , 22: [255, 255, 252, 0]
+            , 21: [255, 255, 248, 0]
+            , 20: [255, 255, 240, 0]
+            , 19: [255, 255, 224, 0]
+            , 18: [255, 255, 192, 0]
+            , 17: [255, 255, 128, 0]
+            , 16: [255, 255, 0, 0]
+            , 15: [255, 254, 0, 0]
+            , 14: [255, 252, 0, 0]
+            , 13: [255, 248, 0, 0]
+            , 12: [255, 240, 0, 0]
+            , 11: [255, 224, 0, 0]
+            , 10: [255, 192, 0, 0]
+            , 9: [255, 128, 0, 0]
+            , 8: [255, 0, 0, 0]
+            , 7: [254, 0, 0, 0]
+            , 6: [252, 0, 0, 0]
+            , 5: [248, 0, 0, 0]
+            , 4: [240, 0, 0, 0]
+            , 3: [224, 0, 0, 0]
+            , 2: [192, 0, 0, 0]
+            , 1: [128, 0, 0, 0]
+            , 0: [0, 0, 0, 0]}# список масок
 
+    ip_filename,ip_type_v4 = check_mistake_argv(sys.argv)
+    if ip_type_v4 == "IPv4":
+        address_list_ipv4 = make_address_list_ipv4(ip_filename)
+        mask = search_mask(address_list_ipv4)
+        address = base_address(mask, address_list_ipv4)
+        for key, value in dict_mask.items():
+            if value == mask:
+                short_mask = key
+        print("Result net: {}.{}.{}.{}/{}".format(address[0],address[1],address[2],address[3],short_mask))
 
+if __name__ == "__main__":
+    main()
+    #print("--- %s seconds ---" % (time.time() - start_time))
 
 
 
