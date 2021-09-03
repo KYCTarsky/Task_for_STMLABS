@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
+#Python ver 3.6.0
+
 import sys
 import os
 
@@ -30,25 +32,28 @@ def make_address_list_ipv4(filename):
         print("Файл не найден. Проверьте правильность ввода.")
         exit()
 
-    pre_address_list = file.read().splitlines() # построковый список адрессов
-    file.close()
 
     address_list = list()
-    pre_one_address = list()
-    for i in pre_address_list:
-        step_list = i.split(".")# разбиваем строки на отдельые значения
-        pre_one_address.clear()
-        for j in step_list:
-            try:
-                pre_one_address.append(int(j))# преобразовываем строковые значения в int
-            except ValueError:
-                print("Проверьте правильность введёных адресов. Ошибка произошла из-за ",j ," значения.")
-                exit()
-        address_list.append(pre_one_address)# добавляем преобразованный адресс в общий список
-    #тут ошибка, в больщой список адресов сохранятеся только последний адрес.
-    address_list.sort()
-    return address_list
-    #теперь мы имееем отсортированный список вида [[192,168,1,3],[192,168,1,4]] и т.д
+    pre_address_list = list()
+    out_address_list=list()
+    for line in file:
+        address_list.append(line[:-1].split("."))# разбиваем строки на отдельые значения и добавляе в общий список
+
+    for i in address_list:
+        for j in i:
+                try:
+                    pre_address_list.append(int(j))# преобразовываем строковые значения в int
+                except ValueError:
+                    print("Проверьте правильность введёных адресов. Ошибка произошла из-за ", j," значения в ", i," строке.")
+                    exit()
+        out_address_list.append(pre_address_list)
+        pre_address_list = list()
+    out_address_list.sort()
+    file.close()
+
+    return out_address_list
+    # теперь мы имееем отсортированный список вида [[192,168,1,3],[192,168,1,4]] и т.д
+
 
 def roundup(subnetmaskx):# функция округления XOR значений
     if subnetmaskx == 0:
@@ -72,17 +77,32 @@ def roundup(subnetmaskx):# функция округления XOR значен�
     else:
         return 0
 
-def search_base_address_ipv4(address_list):
+def binary_convert(num):
+    if num <= 255:
+        pass
+    else:
+        print(num," не является допустимым значением для преобразования.")
+        exit()
+
+    num_bin = format(num,'b')
+    if len(num_bin) == 8:
+        return num_bin
+    else:# len(num_bin) < 10
+        return "0"*(8-len(num_bin))+num_bin
+
+def search_mask(address_list):
     low_address = address_list[0]
+    print(low_address)
     top_address = address_list[-1]
+    print(top_address)
 
     xor_list = list()
     mask_list = list()
-    for i in range(0,3):
+    for i in range(0, 4):
         xor_list.append(low_address[i] ^ top_address[i])
     for i in xor_list:
         mask_list.append(roundup(i))
-
+    print(mask_list)
     if mask_list[0] < 255:
         mask_list[1] = 0
         mask_list[2] = 0
@@ -92,40 +112,28 @@ def search_base_address_ipv4(address_list):
         mask_list[3] = 0
     if mask_list[2] < 255:
         mask_list[3] = 0
+    return mask_list
 
+
+def base_address(mask,dict_mask,address_list):
+    binary_mask = str()
+    for i in mask:
+        binary_mask += binary_convert(i)
+
+    binary_address = str()
+    for i in address_list[0]:
+        binary_address += binary_convert(i)
+
+    binary_base_address = str()
     base_address = list()
-    if mask_list[0]<255:
-        base_address.append(low_address[0])
-        base_address.append(0)
-        base_address.append(0)
-        base_address.append(0)
-    else:
-        base_address.append(low_address[0])
+    for i in range(1,33):
+        binary_base_address += str(int(binary_address[i-1]) and int(binary_mask[i-1]))
+        if i % 8 == 0:
+            base_address.append(int(binary_base_address, base = 2))
+            binary_base_address = str()
+    return base_address
 
-    if mask_list[1]< 255:
-        base_address.append(low_address[1])
-        base_address.append(0)
-        base_address.append(0)
-    else:
-        base_address.append(low_address[1])
-
-    if mask_list[2]< 255:
-        base_address.append(low_address[2])
-        base_address.append(0)
-    else:
-        base_address.append(low_address[2])
-
-    if mask_list[3]< 255:
-        if mask_list[3] < 2 : base_address.append(1)
-        if mask_list[3] < 4 : base_address.append(2)
-        if mask_list[3] < 8: base_address.append(4)
-        if mask_list[3] < 16: base_address.append(8)
-        if mask_list[3] < 32: base_address.append(16)
-        if mask_list[3] < 64: base_address.append(32)
-        if mask_list[3] < 128: base_address.append(64)
-        if mask_list[3] < 256: base_address.append(128)
-
-    dict_mask = {32: [255, 255, 255, 255]
+dict_mask = {32: [255, 255, 255, 255]
         , 31: [255, 255, 255, 254]
         , 30: [255, 255, 255, 252]
         , 29: [255, 255, 255, 248]
@@ -158,21 +166,15 @@ def search_base_address_ipv4(address_list):
         , 2: [192, 0, 0, 0]
         , 1: [128, 0, 0, 0]
         , 0: [0, 0, 0, 0]}
-
-    for key, value in dict_mask.items():
-        if value == mask_list:
-            short_mask = key
-
-    return base_address,short_mask
-
-
-
-
 ip_filename,ip_type_v4 = check_mistake_argv(sys.argv)
-
 if ip_type_v4 == "IPv4":
     address_list_ipv4 = make_address_list_ipv4(ip_filename)
-    base_address,short_mask = search_base_address_ipv4(address_list_ipv4)
+    mask = search_mask(address_list_ipv4)
+    base_address = base_address(mask, dict_mask, address_list_ipv4)
+    #base_address,short_mask = search_base_address_ipv4(address_list_ipv4)
+    for key, value in dict_mask.items():
+        if value == mask:
+            short_mask = key
     print("Result net: {}.{}.{}.{}/{}".format(base_address[0],base_address[1],base_address[2],base_address[3],short_mask))
 
 
