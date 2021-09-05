@@ -25,7 +25,7 @@ def check_mistake_argv(argv):
 
     ip_filename = argv[1] #Запись параметра, с именем файла, который хранит список аддресов
     ip_type = argv[2]     #Запсиь параметра, с типом адрессов
-    return ip_filename,ip_type
+    return ip_filename, ip_type
 
 def make_address_list_ipv4(filename):
     try:
@@ -37,17 +37,20 @@ def make_address_list_ipv4(filename):
 
     address_list = list()
     pre_address_list = list()
-    out_address_list=list()
+    out_address_list = list()
     for line in file:
         address_list.append(line[:-1].split("."))# разбиваем строки на отдельые значения и добавляем в общий список
 
     for i in address_list:
         for j in i:
-                try:
-                    pre_address_list.append(int(j))# преобразовываем строковые значения в int
-                except ValueError:
-                    print("Проверьте правильность введёных адресов. Ошибка произошла из-за ", j," значения в ", i," строке.")
-                    exit()
+            if int(j)>255 and int(j)<0:
+                print("Проверьте правильность введёных адресов. Ошибка произошла из-за ", j, " значения в ", i, " строке.")
+                exit()
+            try:
+                pre_address_list.append(int(j))# преобразовываем строковые значения в int
+            except ValueError:
+                print("Проверьте правильность введёных адресов. Ошибка произошла из-за ", j, " значения в ", i, " строке.")
+                exit()
         out_address_list.append(pre_address_list)# добавляем сформированный адрес в общий список
         pre_address_list = list()
     out_address_list.sort()
@@ -80,13 +83,13 @@ def roundup(subnetmaskx):# функция округления XOR значен�
         return 0
 
 def binary_convert(num):
-    if num <= 255:
+    if num <= 255 and num >=0:
         pass
     else:
-        print(num," не является допустимым значением для преобразования.")
+        print(num, " не является допустимым значением для преобразования.")
         exit()
 
-    num_bin = format(num,'b')# в двоичное значнение
+    num_bin = format(num, 'b')# в двоичное значнение
     if len(num_bin) == 8:
         return num_bin
     else:# len(num_bin) < 10
@@ -115,7 +118,7 @@ def search_mask(address_list):
     return mask_list
 
 
-def base_address(mask,address_list):
+def base_address(mask, address_list):
     binary_mask = str()
     for i in mask:
         binary_mask += binary_convert(i)
@@ -126,7 +129,7 @@ def base_address(mask,address_list):
 
     binary_base_address = str()
     base_address = list()
-    for i in range(1,33):
+    for i in range(1, 33):
         binary_base_address += str(int(binary_address[i-1]) and int(binary_mask[i-1]))# проводим операцию побитового И и определяем подсеть
         if i % 8 == 0:
             base_address.append(int(binary_base_address, base = 2))# переводим двоичные значения в 10 систему
@@ -176,7 +179,7 @@ def main():
         for key, value in dict_mask.items():
             if value == mask:
                 short_mask = key
-        print("Result net: {}.{}.{}.{}/{}".format(address[0],address[1],address[2],address[3],short_mask))
+        print("Result net: {}.{}.{}.{}/{}".format(address[0], address[1], address[2], address[3], short_mask))
 
 if __name__ == "__main__":
     main()
